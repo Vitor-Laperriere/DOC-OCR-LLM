@@ -133,16 +133,18 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-neutral-950 via-neutral-950 to-neutral-900 text-neutral-100">
       <header className="border-b border-white/10 bg-neutral-950/50 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-4">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="h-9 w-9 rounded-xl bg-white/10" />
-            <div>
+            <div className="min-w-0">
               <div className="text-sm font-semibold">Paggo OCR</div>
-              <div className="text-xs text-white/50">Upload • OCR • Chat</div>
+              <div className="text-xs text-white/50 break-words">
+                Upload • OCR • Chat
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={loadDocuments}
               className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 hover:bg-white/10"
@@ -159,22 +161,22 @@ export default function HomePage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl px-6 py-10">
+      <div className="mx-auto w-full max-w-6xl px-6 py-10">
         <section className="mb-8 grid gap-6 md:grid-cols-2">
-          <div className="space-y-4">
+          <div className="space-y-4 min-w-0">
             <div className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">
               Etapa 5 • Upload com Progresso
             </div>
-            <h1 className="text-4xl font-semibold leading-tight tracking-tight">
+            <h1 className="text-4xl font-semibold leading-tight tracking-tight break-words">
               Envie uma fatura e acompanhe o upload em tempo real
             </h1>
-            <p className="text-base text-white/70">
+            <p className="text-base text-white/70 break-words">
               Upload (multipart) + feedback visual e lista de documentos do
               usuário autenticado.
             </p>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur overflow-hidden">
             <h2 className="text-lg font-semibold">Upload de documento</h2>
             <p className="mt-1 text-sm text-white/60">Aceita .jpg e .png.</p>
 
@@ -218,7 +220,7 @@ export default function HomePage() {
               {message && (
                 <div
                   className={[
-                    "rounded-xl border px-4 py-3 text-sm",
+                    "rounded-xl border px-4 py-3 text-sm break-words",
                     status === "error"
                       ? "border-red-500/20 bg-red-500/10 text-red-200"
                       : status === "success"
@@ -241,15 +243,15 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur">
-          <div className="mb-4 flex items-end justify-between gap-4">
-            <div>
+        <section className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur overflow-hidden">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
+            <div className="min-w-0 space-y-1">
               <h2 className="text-lg font-semibold">Seus documentos</h2>
               <p className="text-sm text-white/60">
                 Obtido via GET /documents (JWT).
               </p>
             </div>
-            <div className="text-xs text-white/50">
+            <div className="text-xs text-white/50 shrink-0">
               {docsLoading ? "Carregando..." : `${documents.length} item(ns)`}
             </div>
           </div>
@@ -272,25 +274,25 @@ export default function HomePage() {
               {documents.map((doc) => (
                 <div
                   key={doc.id}
-                  className="rounded-xl border border-white/10 bg-neutral-950/30 p-4"
+                  className="rounded-xl border border-white/10 bg-neutral-950/30 p-4 overflow-hidden"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-semibold text-white/90">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-white/90 break-words">
                         {doc.originalName ?? `Documento ${doc.id.slice(0, 8)}…`}
                       </div>
-                      <div className="mt-1 text-xs text-white/50">
+                      <div className="mt-1 text-xs text-white/50 break-words">
                         {doc.sizeBytes ? formatBytes(doc.sizeBytes) : ""}{" "}
                         {doc.mimeType ? `• ${doc.mimeType}` : ""}
                       </div>
                     </div>
 
-                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/70">
+                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/70 shrink-0">
                       {doc.status}
                     </span>
                   </div>
 
-                  <div className="mt-3 flex items-center justify-between">
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                     <div className="text-xs text-white/40">
                       {doc.createdAt
                         ? new Date(doc.createdAt).toLocaleString()
@@ -298,7 +300,7 @@ export default function HomePage() {
                     </div>
                     <Link
                       href={`/documents/${doc.id}`}
-                      className="text-xs font-semibold text-white/80 hover:text-white"
+                      className="text-xs font-semibold text-white/80 hover:text-white shrink-0"
                     >
                       Ver detalhe →
                     </Link>

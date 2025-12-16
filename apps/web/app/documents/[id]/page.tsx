@@ -211,24 +211,26 @@ export default function DocumentPage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-neutral-950 via-neutral-950 to-neutral-900 text-neutral-100">
       <header className="border-b border-white/10 bg-neutral-950/50 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-4">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="h-9 w-9 rounded-xl bg-white/10" />
-            <div>
+            <div className="min-w-0">
               <div className="text-sm font-semibold">Paggo OCR</div>
-              <div className="text-xs text-white/50">Documento • Detalhe</div>
+              <div className="text-xs text-white/50 break-words">
+                Documento • Detalhe
+              </div>
             </div>
           </div>
           <Link
             href="/"
-            className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 hover:bg-white/10"
+            className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 hover:bg-white/10 shrink-0"
           >
             ← Voltar
           </Link>
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl px-6 py-10">
+      <div className="mx-auto w-full max-w-6xl px-6 py-10">
         {loading ? (
           <div className="h-40 animate-pulse rounded-2xl border border-white/10 bg-white/5" />
         ) : error ? (
@@ -241,19 +243,19 @@ export default function DocumentPage() {
           </div>
         ) : (
           <div className="grid gap-6 lg:grid-cols-3">
-            <section className="lg:col-span-2 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="text-xl font-semibold">
+            <section className="lg:col-span-2 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur overflow-hidden min-w-0">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="text-xl font-semibold break-words">
                     {doc.originalName}
                   </div>
-                  <div className="mt-1 text-sm text-white/60">
+                  <div className="mt-1 text-sm text-white/60 break-words">
                     {doc.mimeType} • {formatBytes(doc.sizeBytes)} •{" "}
                     {new Date(doc.createdAt).toLocaleString()}
                   </div>
                 </div>
 
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80 shrink-0">
                   {doc.status}
                 </span>
               </div>
@@ -291,14 +293,14 @@ export default function DocumentPage() {
                     OCR ainda não disponível.
                   </div>
                 ) : (
-                  <pre className="mt-4 max-h-[520px] overflow-auto whitespace-pre-wrap rounded-xl border border-white/10 bg-neutral-950/30 p-4 text-sm text-white/80">
+                  <pre className="mt-4 max-h-[520px] overflow-auto whitespace-pre-wrap break-words rounded-xl border border-white/10 bg-neutral-950/30 p-4 text-sm text-white/80">
                     {doc.ocrText?.trim() ? doc.ocrText : "(OCR retornou vazio)"}
                   </pre>
                 )}
               </div>
             </section>
 
-            <aside className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur">
+            <aside className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur overflow-hidden">
               <h3 className="text-lg font-semibold">
                 Pergunte sobre o documento
               </h3>
@@ -342,10 +344,12 @@ export default function DocumentPage() {
                           className={
                             m.role === "USER"
                               ? "max-w-[90%] rounded-2xl bg-white px-4 py-2 text-sm text-neutral-950"
-                              : "max-w-[90%] rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/90"
+                            : "max-w-[90%] rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/90"
                           }
                         >
-                          <div className="whitespace-pre-wrap">{m.content}</div>
+                          <div className="whitespace-pre-wrap break-words">
+                            {m.content}
+                          </div>
                           <div className="mt-1 text-[11px] opacity-60">
                             {new Date(m.createdAt).toLocaleString()}
                           </div>
@@ -356,7 +360,7 @@ export default function DocumentPage() {
                 )}
               </div>
 
-              <div className="mt-4 flex gap-2">
+              <div className="mt-4 flex flex-wrap items-start gap-2">
                 <input
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
@@ -366,14 +370,14 @@ export default function DocumentPage() {
                       : "Aguardando OCR…"
                   }
                   disabled={doc.status !== "OCR_DONE" || sending}
-                  className="w-full rounded-xl border border-white/10 bg-neutral-950/30 px-4 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20 disabled:opacity-50"
+                  className="w-full min-w-0 rounded-xl border border-white/10 bg-neutral-950/30 px-4 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20 disabled:opacity-50"
                 />
                 <button
                   onClick={sendQuestion}
                   disabled={
                     doc.status !== "OCR_DONE" || sending || !question.trim()
                   }
-                  className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-white/90 disabled:opacity-50"
+                  className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-white/90 disabled:opacity-50 shrink-0"
                 >
                   {sending ? "..." : "Enviar"}
                 </button>
