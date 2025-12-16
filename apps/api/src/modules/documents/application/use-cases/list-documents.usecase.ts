@@ -1,9 +1,14 @@
-import { DocumentRepository } from '../../domain/repositories/document-repository';
+import { Inject, Injectable } from '@nestjs/common';
+import { DOCUMENT_REPOSITORY } from '../../domain/repositories/document-repository.token';
+import type { DocumentRepository, DocumentEntity } from '../../domain/repositories/document-repository';
 
+@Injectable()
 export class ListDocumentsUseCase {
-  constructor(private readonly repo: DocumentRepository) {}
+  constructor(
+    @Inject(DOCUMENT_REPOSITORY) private readonly repo: DocumentRepository,
+  ) {}
 
-  async execute(ownerId: string) {
-    return this.repo.findByOwnerId(ownerId);
+  execute(ownerId: string): Promise<DocumentEntity[]> {
+    return this.repo.listByOwner(ownerId);
   }
 }

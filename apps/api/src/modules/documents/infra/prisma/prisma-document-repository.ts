@@ -1,18 +1,40 @@
+import { Injectable } from '@nestjs/common';
+import { DocumentStatus } from '@prisma/client';
 import { PrismaService } from '../../../../infra/prisma/prisma.service';
-import { DocumentRepository } from '../../domain/repositories/document-repository';
-import { Document } from '../../domain/entities/document';
+import { DocumentEntity, DocumentRepository } from '../../domain/repositories/document-repository';
 
+@Injectable()
 export class PrismaDocumentRepository implements DocumentRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findByOwnerId(ownerId: string): Promise<Document[]> {
-    const rows = await this.prisma.document.findMany({
+  async listByOwner(ownerId: string): Promise<DocumentEntity[]> {
+    return this.prisma.document.findMany({
       where: { ownerId },
       orderBy: { createdAt: 'desc' },
     });
+  }
 
-    return rows.map(
-      (r) => new Document(r.id, r.ownerId, r.status, r.originalName, r.mimeType, r.sizeBytes, r.storagePath, r.createdAt),
-    );
+  async findByIdForOwner(id: string, ownerId: string): Promise<DocumentEntity | null> {
+    return this.prisma.document.findFirst({
+      where: { id, ownerId },
+    });
+  }
+
+  async create(input: {
+    ownerId: string;
+    status: DocumentStatus;
+    originalName: string;
+    mimeType: string;
+    sizeBytes: number;
+    storagePath: string;
+  }): Promise<DocumentEntity> {
+    return this.prisma.document.create({ data: input });
+  }
+
+  async updateStoragePath(id: string, storagePath: string): Promise<DocumentEntity> {
+    return this.prisma.document.update({
+      where: { id },
+      data: { storagePath },
+    });
   }
 }

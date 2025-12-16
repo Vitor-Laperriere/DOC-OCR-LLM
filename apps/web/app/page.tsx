@@ -13,10 +13,11 @@ type DocumentItem = {
   originalName?: string;
   mimeType?: string;
   sizeBytes?: number;
+  storagePath?: string;
 };
 
 function formatBytes(n?: number) {
-  if (!n && n !== 0) return "";
+  if (n === undefined) return "";
   const units = ["B", "KB", "MB", "GB"];
   let v = n;
   let i = 0;
@@ -35,19 +36,14 @@ export default function HomePage() {
   const [docsLoading, setDocsLoading] = useState(true);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
   const [status, setStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
 
-  const canUpload = useMemo(() => {
-    return Boolean(selectedFile) && status !== "uploading";
-  }, [selectedFile, status]);
+  const canUpload = useMemo(() => Boolean(selectedFile) && status !== "uploading", [selectedFile, status]);
 
   useEffect(() => {
-    // Guard simples: sem token, manda para /login
-    const token = getToken();
-    if (!token) router.replace("/login");
+    if (!getToken()) router.replace("/login");
   }, [router]);
 
   async function loadDocuments() {
@@ -56,14 +52,13 @@ export default function HomePage() {
       const res = await api.get<DocumentItem[]>("/documents");
       setDocuments(res.data ?? []);
     } catch (err: any) {
-      // Se token expirou ou inválido, desloga e manda pro login
       if (err?.response?.status === 401) {
         clearToken();
         router.replace("/login");
         return;
       }
-      setMessage(err?.response?.data?.message || err?.message || "Falha ao carregar documentos.");
       setStatus("error");
+      setMessage(err?.response?.data?.message || err?.message || "Falha ao carregar documentos.");
     } finally {
       setDocsLoading(false);
     }
@@ -82,7 +77,6 @@ export default function HomePage() {
     setProgress(0);
 
     try {
-      // validações simples do client (backend também deve validar)
       const allowed = ["image/png", "image/jpeg"];
       if (!allowed.includes(selectedFile.type)) {
         throw new Error("Formato inválido. Envie PNG ou JPG.");
@@ -93,12 +87,10 @@ export default function HomePage() {
 
       await api.post("/documents", formData, {
         onUploadProgress: (evt) => {
-          // Nem sempre total vem definido; trate fallback.
           if (evt.total) {
             const pct = Math.round((evt.loaded * 100) / evt.total);
             setProgress(Math.min(100, Math.max(0, pct)));
           } else {
-            // “fake progress” suave quando total é undefined
             setProgress((p) => (p < 90 ? p + 5 : p));
           }
         },
@@ -106,19 +98,14 @@ export default function HomePage() {
 
       setProgress(100);
       setStatus("success");
-      setMessage("Upload concluído. Documento registrado com sucesso.");
+      setMessage("Upload concluído. Documento salvo e registrado.");
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
-      // Atualiza lista após upload
       await loadDocuments();
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Falha no upload. Verifique se o endpoint POST /documents está implementado na API.";
       setStatus("error");
-      setMessage(String(msg));
+      setMessage(err?.response?.data?.message || err?.message || "Falha no upload.");
     }
   }
 
@@ -129,7 +116,6 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-neutral-950 via-neutral-950 to-neutral-900 text-neutral-100">
-      {/* Top bar */}
       <header className="border-b border-white/10 bg-neutral-950/50 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
@@ -142,7 +128,7 @@ export default function HomePage() {
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => loadDocuments()}
+              onClick={loadDocuments}
               className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 hover:bg-white/10"
             >
               Atualizar
@@ -158,28 +144,22 @@ export default function HomePage() {
       </header>
 
       <div className="mx-auto max-w-6xl px-6 py-10">
-        {/* Hero */}
         <section className="mb-8 grid gap-6 md:grid-cols-2">
           <div className="space-y-4">
             <div className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">
-              MVP • Upload com Progresso
+              Etapa 5 • Upload com Progresso
             </div>
             <h1 className="text-4xl font-semibold leading-tight tracking-tight">
               Envie uma fatura e acompanhe o upload em tempo real
             </h1>
             <p className="text-base text-white/70">
-              Nesta etapa, o foco é: upload via web, feedback visual (progresso/sucesso/erro) e lista
-              de documentos do usuário autenticado.
+              Upload (multipart) + feedback visual e lista de documentos do usuário autenticado.
             </p>
           </div>
 
-          {/* Upload card */}
           <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur">
             <h2 className="text-lg font-semibold">Upload de documento</h2>
-            <p className="mt-1 text-sm text-white/60">
-              Aceita <span className="text-white/80">.jpg</span> e{" "}
-              <span className="text-white/80">.png</span>.
-            </p>
+            <p className="mt-1 text-sm text-white/60">Aceita .jpg e .png.</p>
 
             <div className="mt-6 space-y-4">
               <input
@@ -190,7 +170,6 @@ export default function HomePage() {
                 onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
               />
 
-              {/* Selected file info */}
               {selectedFile && (
                 <div className="rounded-xl border border-white/10 bg-neutral-950/40 px-4 py-3 text-sm text-white/70">
                   <div className="font-medium text-white/80">{selectedFile.name}</div>
@@ -200,7 +179,6 @@ export default function HomePage() {
                 </div>
               )}
 
-              {/* Progress */}
               {(status === "uploading" || progress > 0) && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs text-white/60">
@@ -208,15 +186,11 @@ export default function HomePage() {
                     <span>{progress}%</span>
                   </div>
                   <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
-                    <div
-                      className="h-full rounded-full bg-white transition-all"
-                      style={{ width: `${progress}%` }}
-                    />
+                    <div className="h-full rounded-full bg-white transition-all" style={{ width: `${progress}%` }} />
                   </div>
                 </div>
               )}
 
-              {/* Message */}
               {message && (
                 <div
                   className={[
@@ -235,39 +209,27 @@ export default function HomePage() {
               <button
                 onClick={onUpload}
                 disabled={!canUpload}
-                className="w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-40"
+                className="w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-neutral-950 hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {status === "uploading" ? "Enviando..." : "Upload"}
               </button>
-
-              <p className="text-xs text-white/50">
-                Se você receber erro 401, faça login novamente (token expirado).
-              </p>
             </div>
           </div>
         </section>
 
-        {/* Documents list */}
         <section className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur">
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold">Seus documentos</h2>
-              <p className="text-sm text-white/60">
-                Lista obtida via <code>GET /documents</code> (JWT obrigatório).
-              </p>
+              <p className="text-sm text-white/60">Obtido via GET /documents (JWT).</p>
             </div>
-            <div className="text-xs text-white/50">
-              {docsLoading ? "Carregando..." : `${documents.length} item(ns)`}
-            </div>
+            <div className="text-xs text-white/50">{docsLoading ? "Carregando..." : `${documents.length} item(ns)`}</div>
           </div>
 
           {docsLoading ? (
             <div className="grid gap-3 md:grid-cols-2">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-20 animate-pulse rounded-xl border border-white/10 bg-neutral-950/30"
-                />
+                <div key={i} className="h-20 animate-pulse rounded-xl border border-white/10 bg-neutral-950/30" />
               ))}
             </div>
           ) : documents.length === 0 ? (
@@ -277,18 +239,14 @@ export default function HomePage() {
           ) : (
             <div className="grid gap-3 md:grid-cols-2">
               {documents.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="rounded-xl border border-white/10 bg-neutral-950/30 p-4"
-                >
+                <div key={doc.id} className="rounded-xl border border-white/10 bg-neutral-950/30 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="text-sm font-semibold text-white/90">
-                        Documento {doc.id.slice(0, 8)}…
+                        {doc.originalName ?? `Documento ${doc.id.slice(0, 8)}…`}
                       </div>
                       <div className="mt-1 text-xs text-white/50">
-                        {doc.originalName ? doc.originalName : "—"}{" "}
-                        {doc.sizeBytes ? `• ${formatBytes(doc.sizeBytes)}` : ""}
+                        {doc.sizeBytes ? formatBytes(doc.sizeBytes) : ""} {doc.mimeType ? `• ${doc.mimeType}` : ""}
                       </div>
                     </div>
 
@@ -301,12 +259,7 @@ export default function HomePage() {
                     <div className="text-xs text-white/40">
                       {doc.createdAt ? new Date(doc.createdAt).toLocaleString() : ""}
                     </div>
-
-                    {/* Link pronto para a etapa de detalhe */}
-                    <Link
-                      href={`/documents/${doc.id}`}
-                      className="text-xs font-semibold text-white/80 hover:text-white"
-                    >
+                    <Link href={`/documents/${doc.id}`} className="text-xs font-semibold text-white/80 hover:text-white">
                       Ver detalhe →
                     </Link>
                   </div>
@@ -315,10 +268,6 @@ export default function HomePage() {
             </div>
           )}
         </section>
-
-        <footer className="mt-10 text-center text-xs text-white/30">
-          Próxima etapa: OCR e tela de detalhe por documento.
-        </footer>
       </div>
     </main>
   );
