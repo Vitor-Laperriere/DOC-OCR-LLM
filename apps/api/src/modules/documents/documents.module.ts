@@ -21,5 +21,6 @@ import { OcrService } from './infra/ocr/ocr.service';
     OcrService,
     { provide: OCR_PORT, useExisting: OcrService },
   ],
+  exports: [OCR_PORT],
 })
 export class DocumentsModule {}

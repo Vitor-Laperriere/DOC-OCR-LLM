@@ -4,7 +4,10 @@ import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
 
 import { DOCUMENT_REPOSITORY } from '../../domain/repositories/document-repository.token';
-import type { DocumentEntity, DocumentRepository } from '../../domain/repositories/document-repository';
+import type {
+  DocumentEntity,
+  DocumentRepository,
+} from '../../domain/repositories/document-repository';
 import { OCR_PORT } from '../../domain/ports/ocr.port';
 import type { OcrPort } from '../../domain/ports/ocr.port';
 
@@ -23,7 +26,10 @@ export class UploadDocumentUseCase {
     @Inject(OCR_PORT) private readonly ocr: OcrPort,
   ) {}
 
-  async execute(input: { ownerId: string; file: Express.Multer.File }): Promise<DocumentEntity> {
+  async execute(input: {
+    ownerId: string;
+    file: Express.Multer.File;
+  }): Promise<DocumentEntity> {
     const { ownerId, file } = input;
 
     // 1) Cria doc inicial (precisamos do id para nomear arquivo)
@@ -40,7 +46,8 @@ export class UploadDocumentUseCase {
     const storageDir = path.join(process.cwd(), 'storage');
     await fs.mkdir(storageDir, { recursive: true });
 
-    const ext = extFromMime(file.mimetype) || path.extname(file.originalname) || '';
+    const ext =
+      extFromMime(file.mimetype) || path.extname(file.originalname) || '';
     const filename = `${created.id}${ext}`;
     const relativePath = path.join('storage', filename);
     const absolutePath = path.join(process.cwd(), relativePath);
@@ -52,10 +59,23 @@ export class UploadDocumentUseCase {
     await this.repo.updateStatus(created.id, DocumentStatus.OCR_PROCESSING);
 
     try {
-      const text = await this.ocr.extractText({ mimeType: file.mimetype, absolutePath });
-      await this.repo.upsertOcrResult(created.id, text);
+      const result = await this.ocr.extractText({
+        buffer: file.buffer,
+        absolutePath,
+        originalMimeType: file.mimetype,
+      });
+
+      await this.repo.upsertOcrResult(created.id, result.text);
       await this.repo.updateStatus(created.id, DocumentStatus.OCR_DONE);
-    } catch (e) {
+    } catch (e: any) {
+      console.error('[OCR] failed', {
+        documentId: created.id,
+        originalName: file.originalname,
+        mimetype: file.mimetype,
+        storagePath: absolutePath,
+        message: e?.message,
+        stack: e?.stack,
+      });
       await this.repo.updateStatus(created.id, DocumentStatus.FAILED);
     }
 
