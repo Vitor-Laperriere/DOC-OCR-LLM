@@ -1,10 +1,11 @@
-````md
-## Demo
+# Demo
+
 ![Demo](docs/paggo.gif)
 
 # Paggo OCR — Local Setup (1 comando)
 
 Monorepo com:
+
 - **API (NestJS)**: `apps/api` (porta **3001**)
 - **Web (Next.js)**: `apps/web` (porta **3000**)
 - **Infra (Docker Compose)**: Postgres + Redis
@@ -13,88 +14,64 @@ Monorepo com:
 
 ## Chaves, tokens e credenciais necessárias
 
-### 1) JWT (obrigatório)
-A API emite JWT no login. Você precisa configurar:
+### 1. JWT (obrigatório)
 
-- `JWT_SECRET` (obrigatório): string qualquer, forte.
+A API emite JWT no login. Configure:
+
+- `JWT_SECRET` (obrigatório): string forte.
 - `JWT_EXPIRES_IN` (opcional): ex. `3600s`.
 
-**Como obter:** você mesmo define.
 Exemplo:
+
 ```env
 JWT_SECRET=change-me-to-a-long-random-string
 JWT_EXPIRES_IN=3600s
-````
+```
 
-### 2) Banco de dados (obrigatório)
+### 2. Banco de dados (obrigatório)
 
-O projeto usa Postgres do Docker Compose. Você precisa ter no `.env` da API:
-
-* `DATABASE_URL` (obrigatório)
-
-Com o seu `docker-compose.yml`, o correto é:
+Postgres via Docker Compose. Em `apps/api/.env`:
 
 ```env
 DATABASE_URL=postgresql://paggo:paggo@localhost:5432/paggo?schema=public
 ```
 
-### 3) LLM (opcional para o sistema funcionar completo)
+### 3. LLM (opcional para chat)
 
-Para o recurso de **perguntar sobre o documento** (chat), você precisa configurar **pelo menos 1 provider**:
+Para o chat do documento configure **pelo menos um** provider.
 
-#### OpenAI (opcional)
+#### OpenAI
 
-* `OPENAI_API_KEY` (obrigatório se `LLM_PROVIDER=openai`)
-* `OPENAI_MODEL` (opcional)
-* `OPENAI_MAX_OUTPUT_TOKENS` (opcional)
+- `OPENAI_API_KEY` (obrigatório se `LLM_PROVIDER=openai`)
+- `OPENAI_MODEL` e `OPENAI_MAX_OUTPUT_TOKENS` opcionais
 
-**Como obter:**
+#### Gemini
 
-1. Crie conta e um projeto na OpenAI Platform.
-2. Gere uma API key.
-3. Cole em `apps/api/.env` como `OPENAI_API_KEY=...`.
+- `GEMINI_API_KEY` (obrigatório se `LLM_PROVIDER=gemini`)
+- `GEMINI_MODEL` opcional
 
-#### Gemini (opcional)
+> Não faça commit de `.env`; use `.env.example` em produção.
 
-* `GEMINI_API_KEY` (obrigatório se `LLM_PROVIDER=gemini`)
-* `GEMINI_MODEL` (opcional)
+### 4. OCR (recomendado)
 
-**Como obter:**
-
-1. Crie uma API key para Gemini/Google AI (Generative Language API).
-2. Cole em `apps/api/.env` como `GEMINI_API_KEY=...`.
-
-> Observação: em projetos reais, nunca commite `.env`. Use `.env.example` e variáveis no deploy.
-
-### 4) OCR (recomendado)
-
-Sem isso, OCR pode ficar limitado (principalmente PDF escaneado).
-
-* `OCR_ENGINE` (opcional): `native` ou `js`
-* `OCR_LANG` (opcional): ex. `por+eng`
-
-**Dependências nativas recomendadas:**
-
-* `tesseract` (OCR nativo)
-* `pdftoppm` (vem do `poppler`, para PDF escaneado → imagem)
+- `OCR_ENGINE`: `native` ou `js`
+- `OCR_LANG`: ex. `por+eng`
+- Dependências: `tesseract` e `pdftoppm` (poppler) para OCR em PDFs escaneados.
 
 ---
 
 ## Pré-requisitos
 
-* **Node.js 18+**
-* **Docker** (Docker Desktop no Windows/macOS)
-* (Recomendado para OCR robusto) **tesseract** e **pdftoppm**
-
-  * macOS: `brew install tesseract poppler`
-  * Linux (Debian/Ubuntu): `sudo apt-get install -y tesseract-ocr poppler-utils`
-  * Windows: instale Tesseract e Poppler e garanta no `PATH` (ou use `OCR_ENGINE=js`)
+- **Node.js 18+**
+- **Docker**
+- **tesseract** e **pdftoppm** (recomendado)
+  - macOS: `brew install tesseract poppler`
+  - Linux (Debian/Ubuntu): `sudo apt-get install -y tesseract-ocr poppler-utils`
+  - Windows: instale Tesseract + Poppler e ajuste o `PATH` (ou use `OCR_ENGINE=js`)
 
 ---
 
 ## Rodar (um comando)
-
-Na raiz do repositório:
 
 ```bash
 node scripts/dev.mjs
@@ -102,32 +79,29 @@ node scripts/dev.mjs
 
 ### O script automaticamente
 
-* Sobe Postgres + Redis via Docker Compose
-* Cria `.env` (API) e `.env.local` (Web) se não existirem
-* Instala dependências (API + Web)
-* Roda `prisma generate` + `prisma migrate dev`
-* Inicia API e Web
+- Sobe Postgres + Redis via Docker Compose
+- Cria `.env` (API) e `.env.local` (Web) se não existirem
+- Instala dependências (API + Web)
+- Roda `prisma generate` + `prisma migrate dev`
+- Inicia API e Web
 
 ### Acessos
 
-* API health: [http://localhost:3001/health](http://localhost:3001/health)
-* Web (login):  [http://localhost:3000/login](http://localhost:3000/login)
+- API health: <http://localhost:3001/health>
+- Web (login): <http://localhost:3000/login>
 
-### Configurar chaves de LLM (para chat funcionar)
+### Configurar chaves de LLM
 
-Edite `apps/api/.env` e preencha pelo menos uma:
+Edite `apps/api/.env`:
 
-* `OPENAI_API_KEY=...` (OpenAI)
-* `GEMINI_API_KEY=...` (Gemini)
-
-Opcional:
-
-* `LLM_PROVIDER=openai` ou `LLM_PROVIDER=gemini`
+- `OPENAI_API_KEY=...`
+- `GEMINI_API_KEY=...`
+- Opcional: `LLM_PROVIDER=openai` ou `LLM_PROVIDER=gemini`
 
 ### Parar
 
-* `Ctrl + C` (para Web e API)
-* Para parar containers:
+- `Ctrl + C` encerra API e Web
+- Para parar containers:
 
   ```bash
   docker compose down
@@ -135,22 +109,18 @@ Opcional:
 
 ---
 
-# Se o script falhar: rodar manualmente (passo a passo)
+# Se o script falhar: passo a passo manual
 
-## 1) Subir Postgres + Redis
-
-Na raiz do repo:
+## 1. Subir Postgres + Redis
 
 ```bash
 docker compose up -d
 docker compose ps
 ```
 
-## 2) Configurar variáveis de ambiente
+## 2. Configurar variáveis de ambiente
 
-### 2.1 API (`apps/api/.env`)
-
-Crie/edite `apps/api/.env`:
+### API (`apps/api/.env`)
 
 ```env
 PORT=3001
@@ -173,43 +143,28 @@ GEMINI_API_KEY=
 GEMINI_MODEL=gemini-2.5-flash
 ```
 
-### 2.2 Web (`apps/web/.env.local`)
-
-Crie/edite `apps/web/.env.local`:
+### Web (`apps/web/.env.local`)
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
 
-## 3) Instalar dependências
+## 3. Instalar dependências
 
-### 3.1 API
+```bash
+cd apps/api && npm install
+cd ../web && npm install
+```
+
+## 4. Prisma (generate + migrate)
 
 ```bash
 cd apps/api
-npm install
-```
-
-### 3.2 Web
-
-```bash
-cd ../web
-npm install
-```
-
-## 4) Prisma: generate + migrate
-
-No `apps/api`:
-
-```bash
-cd ../api
 npm exec prisma generate
 npm exec prisma migrate dev
 ```
 
-Checkpoint: migrations aplicadas sem erro.
-
-## 5) Subir API
+## 5. Subir API
 
 ```bash
 cd apps/api
@@ -222,18 +177,14 @@ Teste:
 curl -i http://localhost:3001/health
 ```
 
-## 6) Subir Web
-
-Em outro terminal:
+## 6. Subir Web
 
 ```bash
 cd apps/web
 npm run dev
 ```
 
-Acesse:
-
-* [http://localhost:3000/login](http://localhost:3000/login)
+Acesse <http://localhost:3000/login>.
 
 ---
 
@@ -241,25 +192,20 @@ Acesse:
 
 ### Banco não conecta
 
-* Verifique `docker compose ps`
-* Confira `DATABASE_URL` e porta `5432`
+- Verifique `docker compose ps`
+- Confira `DATABASE_URL` e porta `5432`
 
 ### OCR em PDF escaneado falha
 
-* Confirme `pdftoppm`:
+- Cheque `which pdftoppm`
+- Se precisar, instale:
+  - macOS: `brew install poppler`
+  - Ubuntu: `sudo apt-get install poppler-utils`
 
-  ```bash
-  which pdftoppm
-  ```
-* Instale:
+### LLM retorna erro
 
-  * macOS: `brew install poppler`
-  * Ubuntu: `sudo apt-get install poppler-utils`
-
-### LLM retorna erro (quota / key inválida)
-
-* Confirme `OPENAI_API_KEY` ou `GEMINI_API_KEY`
-* Troque provider:
+- Confirme `OPENAI_API_KEY` ou `GEMINI_API_KEY`
+- Mude o provider conforme necessidade:
 
   ```env
   LLM_PROVIDER=gemini
@@ -272,7 +218,3 @@ Acesse:
   ```
 
 ---
-
-```
-::contentReference[oaicite:0]{index=0}
-```
