@@ -17,6 +17,18 @@ type DocumentDetails = {
   ocrText: string | null;
 };
 
+type ChatMessage = {
+  id: string;
+  role: "USER" | "ASSISTANT";
+  content: string;
+  createdAt: string;
+};
+
+type ChatResponse = {
+  sessionId: string;
+  messages: ChatMessage[];
+};
+
 function formatBytes(n: number) {
   const units = ["B", "KB", "MB", "GB"];
   let v = n;
@@ -29,6 +41,11 @@ function formatBytes(n: number) {
 }
 
 export default function DocumentPage() {
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [question, setQuestion] = useState("");
+  const [sending, setSending] = useState(false);
   const params = useParams<{ id: string }>();
   const id = params.id;
   const router = useRouter();
@@ -38,7 +55,10 @@ export default function DocumentPage() {
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const shouldPoll = useMemo(() => doc?.status === "OCR_PROCESSING", [doc?.status]);
+  const shouldPoll = useMemo(
+    () => doc?.status === "OCR_PROCESSING",
+    [doc?.status]
+  );
 
   useEffect(() => {
     if (!getToken()) router.replace("/login");
@@ -55,9 +75,84 @@ export default function DocumentPage() {
         router.replace("/login");
         return;
       }
-      setError(err?.response?.data?.message || err?.message || "Falha ao carregar documento.");
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Falha ao carregar documento."
+      );
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchChat() {
+    if (!id) return;
+    setChatError(null);
+    setChatLoading(true);
+    try {
+      const res = await api.get<ChatResponse>(`/documents/${id}/chat`);
+      setMessages(res.data.messages ?? []);
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        clearToken();
+        router.replace("/login");
+        return;
+      }
+      setChatError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Falha ao carregar chat."
+      );
+    } finally {
+      setChatLoading(false);
+    }
+  }
+
+  async function sendQuestion() {
+    if (!doc || doc.status !== "OCR_DONE") return;
+    const q = question.trim();
+    if (!q) return;
+
+    setSending(true);
+    setChatError(null);
+
+    // otimista: adiciona msg do usuário
+    const optimisticUser: ChatMessage = {
+      id: `local-user-${Date.now()}`,
+      role: "USER",
+      content: q,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimisticUser]);
+    setQuestion("");
+
+    try {
+      const res = await api.post<{ sessionId: string; answer: string }>(
+        `/documents/${doc.id}/chat`,
+        {
+          question: q,
+        }
+      );
+
+      const optimisticAssistant: ChatMessage = {
+        id: `local-assistant-${Date.now()}`,
+        role: "ASSISTANT",
+        content: res.data.answer || "(sem resposta)",
+        createdAt: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, optimisticAssistant]);
+
+      // opcional: sincroniza com DB (garante ids reais/ordem)
+      await fetchChat();
+    } catch (err: any) {
+      setChatError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Falha ao enviar pergunta."
+      );
+    } finally {
+      setSending(false);
     }
   }
 
@@ -77,12 +172,21 @@ export default function DocumentPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldPoll]);
 
+  useEffect(() => {
+    if (doc?.status === "OCR_DONE") {
+      fetchChat();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doc?.status, doc?.id]);
+
   async function downloadOriginal() {
     if (!doc) return;
     setDownloading(true);
     setError(null);
     try {
-      const res = await api.get(`/documents/${doc.id}/file`, { responseType: "blob" });
+      const res = await api.get(`/documents/${doc.id}/file`, {
+        responseType: "blob",
+      });
       const blob = new Blob([res.data], { type: doc.mimeType });
 
       const url = URL.createObjectURL(blob);
@@ -94,7 +198,11 @@ export default function DocumentPage() {
       a.remove();
       URL.revokeObjectURL(url);
     } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || "Falha ao baixar arquivo.");
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Falha ao baixar arquivo."
+      );
     } finally {
       setDownloading(false);
     }
@@ -136,7 +244,9 @@ export default function DocumentPage() {
             <section className="lg:col-span-2 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <div className="text-xl font-semibold">{doc.originalName}</div>
+                  <div className="text-xl font-semibold">
+                    {doc.originalName}
+                  </div>
                   <div className="mt-1 text-sm text-white/60">
                     {doc.mimeType} • {formatBytes(doc.sizeBytes)} •{" "}
                     {new Date(doc.createdAt).toLocaleString()}
@@ -189,13 +299,90 @@ export default function DocumentPage() {
             </section>
 
             <aside className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur">
-              <h3 className="text-lg font-semibold">Próximas etapas</h3>
-              <ul className="mt-3 space-y-2 text-sm text-white/70">
-                <li>• POST /documents/:id/chat (LLM)</li>
-                <li>• Persistir sessões/mensagens</li>
-                <li>• Download PDF com apêndice</li>
-                <li>• OCR assíncrono com fila</li>
-              </ul>
+              <h3 className="text-lg font-semibold">
+                Pergunte sobre o documento
+              </h3>
+              <p className="mt-1 text-sm text-white/60">
+                O assistente responde com base no OCR salvo no servidor.
+              </p>
+
+              {doc.status !== "OCR_DONE" && (
+                <div className="mt-4 rounded-xl border border-white/10 bg-neutral-950/30 px-4 py-4 text-sm text-white/70">
+                  O chat fica disponível quando o OCR finalizar.
+                </div>
+              )}
+
+              {chatError && (
+                <div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-200">
+                  {chatError}
+                </div>
+              )}
+
+              <div className="mt-4 h-[420px] overflow-auto rounded-xl border border-white/10 bg-neutral-950/30 p-4">
+                {chatLoading ? (
+                  <div className="text-sm text-white/60">
+                    Carregando mensagens…
+                  </div>
+                ) : messages.length === 0 ? (
+                  <div className="text-sm text-white/60">
+                    Ainda não há mensagens. Faça a primeira pergunta.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {messages.map((m) => (
+                      <div
+                        key={m.id}
+                        className={
+                          m.role === "USER"
+                            ? "flex justify-end"
+                            : "flex justify-start"
+                        }
+                      >
+                        <div
+                          className={
+                            m.role === "USER"
+                              ? "max-w-[90%] rounded-2xl bg-white px-4 py-2 text-sm text-neutral-950"
+                              : "max-w-[90%] rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/90"
+                          }
+                        >
+                          <div className="whitespace-pre-wrap">{m.content}</div>
+                          <div className="mt-1 text-[11px] opacity-60">
+                            {new Date(m.createdAt).toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 flex gap-2">
+                <input
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  placeholder={
+                    doc.status === "OCR_DONE"
+                      ? "Ex.: Qual é o valor total? Qual o CNPJ?"
+                      : "Aguardando OCR…"
+                  }
+                  disabled={doc.status !== "OCR_DONE" || sending}
+                  className="w-full rounded-xl border border-white/10 bg-neutral-950/30 px-4 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:border-white/20 disabled:opacity-50"
+                />
+                <button
+                  onClick={sendQuestion}
+                  disabled={
+                    doc.status !== "OCR_DONE" || sending || !question.trim()
+                  }
+                  className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-neutral-950 hover:bg-white/90 disabled:opacity-50"
+                >
+                  {sending ? "..." : "Enviar"}
+                </button>
+              </div>
+
+              <div className="mt-3 text-xs text-white/50">
+                Dica: pergunte campos objetivos (“valor total”, “CNPJ”, “data”,
+                “itens”), ou peça um resumo.
+              </div>
             </aside>
           </div>
         )}

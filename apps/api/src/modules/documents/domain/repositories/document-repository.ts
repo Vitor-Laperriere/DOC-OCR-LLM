@@ -18,7 +18,10 @@ export type DocumentDetails = DocumentEntity & {
 
 export interface DocumentRepository {
   listByOwner(ownerId: string): Promise<DocumentEntity[]>;
-  findByIdForOwner(id: string, ownerId: string): Promise<DocumentDetails | null>;
+  findByIdForOwner(
+    id: string,
+    ownerId: string,
+  ): Promise<DocumentDetails | null>;
 
   create(input: {
     ownerId: string;
@@ -32,4 +35,35 @@ export interface DocumentRepository {
   updateStoragePath(id: string, storagePath: string): Promise<DocumentEntity>;
   updateStatus(id: string, status: DocumentStatus): Promise<DocumentEntity>;
   upsertOcrResult(documentId: string, text: string): Promise<void>;
+
+  getOcrText(documentId: string): Promise<string | null>;
+
+  getOrCreateChatSession(
+    documentId: string,
+    userId: string,
+  ): Promise<ChatSessionEntity>;
+
+  listChatMessages(
+    sessionId: string,
+    limit: number,
+  ): Promise<ChatMessageEntity[]>;
+
+  createChatMessage(input: {
+    sessionId: string;
+    role: 'USER' | 'ASSISTANT';
+    content: string;
+  }): Promise<void>;
 }
+
+export type ChatMessageEntity = {
+  id: string;
+  role: 'USER' | 'ASSISTANT';
+  content: string;
+  createdAt: Date;
+};
+
+export type ChatSessionEntity = {
+  id: string;
+  documentId: string;
+  userId: string;
+};

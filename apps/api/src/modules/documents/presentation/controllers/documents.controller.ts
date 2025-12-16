@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
@@ -21,6 +22,8 @@ import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
 import { ListDocumentsUseCase } from '../../application/use-cases/list-documents.usecase';
 import { GetDocumentUseCase } from '../../application/use-cases/get-document.usecase';
 import { UploadDocumentUseCase } from '../../application/use-cases/upload-document.usecase';
+import { AskDocumentDto } from '../dtos/ask-document.dto';
+import { AskDocumentUseCase } from '../../application/use-cases/ask-document.usecase';
 
 @Controller('documents')
 @UseGuards(JwtAuthGuard)
@@ -29,7 +32,21 @@ export class DocumentsController {
     private readonly listDocs: ListDocumentsUseCase,
     private readonly getDoc: GetDocumentUseCase,
     private readonly uploadDoc: UploadDocumentUseCase,
+    private readonly askDoc: AskDocumentUseCase,
   ) {}
+
+  @Post(':id/chat')
+  async chat(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() dto: AskDocumentDto,
+  ) {
+    return this.askDoc.execute({
+      ownerId: req.user.sub,
+      documentId: id,
+      question: dto.question,
+    });
+  }
 
   @Get()
   list(@Req() req: any) {

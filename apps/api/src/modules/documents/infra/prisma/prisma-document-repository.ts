@@ -8,7 +8,7 @@ import type {
 } from '../../domain/repositories/document-repository';
 
 @Injectable()
-export class PrismaDocumentRepository implements DocumentRepository {
+export class PrismaDocumentRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async listByOwner(ownerId: string): Promise<DocumentEntity[]> {
@@ -18,7 +18,10 @@ export class PrismaDocumentRepository implements DocumentRepository {
     });
   }
 
-  async findByIdForOwner(id: string, ownerId: string): Promise<DocumentDetails | null> {
+  async findByIdForOwner(
+    id: string,
+    ownerId: string,
+  ): Promise<DocumentDetails | null> {
     const doc = await this.prisma.document.findFirst({
       where: { id, ownerId },
       include: { ocrResult: true },
@@ -43,11 +46,20 @@ export class PrismaDocumentRepository implements DocumentRepository {
     return this.prisma.document.create({ data: input });
   }
 
-  async updateStoragePath(id: string, storagePath: string): Promise<DocumentEntity> {
-    return this.prisma.document.update({ where: { id }, data: { storagePath } });
+  async updateStoragePath(
+    id: string,
+    storagePath: string,
+  ): Promise<DocumentEntity> {
+    return this.prisma.document.update({
+      where: { id },
+      data: { storagePath },
+    });
   }
 
-  async updateStatus(id: string, status: DocumentStatus): Promise<DocumentEntity> {
+  async updateStatus(
+    id: string,
+    status: DocumentStatus,
+  ): Promise<DocumentEntity> {
     return this.prisma.document.update({ where: { id }, data: { status } });
   }
 
@@ -56,6 +68,49 @@ export class PrismaDocumentRepository implements DocumentRepository {
       where: { documentId },
       update: { text },
       create: { documentId, text },
+    });
+  }
+
+  async getOcrText(documentId: string): Promise<string | null> {
+    const row = await this.prisma.ocrResult.findUnique({
+      where: { documentId },
+      select: { text: true },
+    });
+    return row?.text ?? null;
+  }
+
+  async getOrCreateChatSession(documentId: string, userId: string) {
+    // MVP: 1 sessão por doc+user (sem mexer no schema agora).
+    const existing = await this.prisma.chatSession.findFirst({
+      where: { documentId, userId },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (existing) return existing;
+
+    return await this.prisma.chatSession.create({
+      data: { documentId, userId },
+    });
+  }
+
+  async listChatMessages(sessionId: string, limit: number) {
+    return await this.prisma.chatMessage.findMany({
+      where: { sessionId },
+      orderBy: { createdAt: 'asc' },
+      take: limit,
+    });
+  }
+
+  async createChatMessage(input: {
+    sessionId: string;
+    role: 'USER' | 'ASSISTANT';
+    content: string;
+  }) {
+    await this.prisma.chatMessage.create({
+      data: {
+        sessionId: input.sessionId,
+        role: input.role,
+        content: input.content,
+      },
     });
   }
 }
