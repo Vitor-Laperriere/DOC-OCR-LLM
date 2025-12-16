@@ -6,7 +6,8 @@ import { DOCUMENT_REPOSITORY } from './domain/repositories/document-repository.t
 import { ListDocumentsUseCase } from './application/use-cases/list-documents.usecase';
 import { GetDocumentUseCase } from './application/use-cases/get-document.usecase';
 import { UploadDocumentUseCase } from './application/use-cases/upload-document.usecase';
-
+import { OCR_PORT } from './domain/ports/ocr.port';
+import { OcrService } from './infra/ocr/ocr.service';
 
 @Module({
   imports: [PrismaModule],
@@ -17,6 +18,8 @@ import { UploadDocumentUseCase } from './application/use-cases/upload-document.u
     ListDocumentsUseCase,
     GetDocumentUseCase,
     UploadDocumentUseCase,
+    OcrService,
+    { provide: OCR_PORT, useExisting: OcrService },
   ],
 })
 export class DocumentsModule {}

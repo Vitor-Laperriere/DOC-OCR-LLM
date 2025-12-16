@@ -36,11 +36,16 @@ export default function HomePage() {
   const [docsLoading, setDocsLoading] = useState(true);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [status, setStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "uploading" | "success" | "error"
+  >("idle");
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
 
-  const canUpload = useMemo(() => Boolean(selectedFile) && status !== "uploading", [selectedFile, status]);
+  const canUpload = useMemo(
+    () => Boolean(selectedFile) && status !== "uploading",
+    [selectedFile, status]
+  );
 
   useEffect(() => {
     if (!getToken()) router.replace("/login");
@@ -58,7 +63,11 @@ export default function HomePage() {
         return;
       }
       setStatus("error");
-      setMessage(err?.response?.data?.message || err?.message || "Falha ao carregar documentos.");
+      setMessage(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Falha ao carregar documentos."
+      );
     } finally {
       setDocsLoading(false);
     }
@@ -77,7 +86,12 @@ export default function HomePage() {
     setProgress(0);
 
     try {
-      const allowed = ["image/png", "image/jpeg"];
+      const allowed = [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "application/pdf",
+      ];
       if (!allowed.includes(selectedFile.type)) {
         throw new Error("Formato inválido. Envie PNG ou JPG.");
       }
@@ -105,7 +119,9 @@ export default function HomePage() {
       await loadDocuments();
     } catch (err: any) {
       setStatus("error");
-      setMessage(err?.response?.data?.message || err?.message || "Falha no upload.");
+      setMessage(
+        err?.response?.data?.message || err?.message || "Falha no upload."
+      );
     }
   }
 
@@ -153,7 +169,8 @@ export default function HomePage() {
               Envie uma fatura e acompanhe o upload em tempo real
             </h1>
             <p className="text-base text-white/70">
-              Upload (multipart) + feedback visual e lista de documentos do usuário autenticado.
+              Upload (multipart) + feedback visual e lista de documentos do
+              usuário autenticado.
             </p>
           </div>
 
@@ -165,14 +182,16 @@ export default function HomePage() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/png,image/jpeg"
+                accept="image/png,image/jpeg,image/webp,application/pdf"
                 className="block w-full text-sm text-white/70 file:mr-4 file:rounded-xl file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-semibold file:text-neutral-950 hover:file:bg-white/90"
                 onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
               />
 
               {selectedFile && (
                 <div className="rounded-xl border border-white/10 bg-neutral-950/40 px-4 py-3 text-sm text-white/70">
-                  <div className="font-medium text-white/80">{selectedFile.name}</div>
+                  <div className="font-medium text-white/80">
+                    {selectedFile.name}
+                  </div>
                   <div className="text-xs text-white/50">
                     {selectedFile.type} • {formatBytes(selectedFile.size)}
                   </div>
@@ -182,11 +201,16 @@ export default function HomePage() {
               {(status === "uploading" || progress > 0) && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs text-white/60">
-                    <span>{status === "uploading" ? "Enviando..." : "Progresso"}</span>
+                    <span>
+                      {status === "uploading" ? "Enviando..." : "Progresso"}
+                    </span>
                     <span>{progress}%</span>
                   </div>
                   <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
-                    <div className="h-full rounded-full bg-white transition-all" style={{ width: `${progress}%` }} />
+                    <div
+                      className="h-full rounded-full bg-white transition-all"
+                      style={{ width: `${progress}%` }}
+                    />
                   </div>
                 </div>
               )}
@@ -221,15 +245,22 @@ export default function HomePage() {
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold">Seus documentos</h2>
-              <p className="text-sm text-white/60">Obtido via GET /documents (JWT).</p>
+              <p className="text-sm text-white/60">
+                Obtido via GET /documents (JWT).
+              </p>
             </div>
-            <div className="text-xs text-white/50">{docsLoading ? "Carregando..." : `${documents.length} item(ns)`}</div>
+            <div className="text-xs text-white/50">
+              {docsLoading ? "Carregando..." : `${documents.length} item(ns)`}
+            </div>
           </div>
 
           {docsLoading ? (
             <div className="grid gap-3 md:grid-cols-2">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-20 animate-pulse rounded-xl border border-white/10 bg-neutral-950/30" />
+                <div
+                  key={i}
+                  className="h-20 animate-pulse rounded-xl border border-white/10 bg-neutral-950/30"
+                />
               ))}
             </div>
           ) : documents.length === 0 ? (
@@ -239,14 +270,18 @@ export default function HomePage() {
           ) : (
             <div className="grid gap-3 md:grid-cols-2">
               {documents.map((doc) => (
-                <div key={doc.id} className="rounded-xl border border-white/10 bg-neutral-950/30 p-4">
+                <div
+                  key={doc.id}
+                  className="rounded-xl border border-white/10 bg-neutral-950/30 p-4"
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="text-sm font-semibold text-white/90">
                         {doc.originalName ?? `Documento ${doc.id.slice(0, 8)}…`}
                       </div>
                       <div className="mt-1 text-xs text-white/50">
-                        {doc.sizeBytes ? formatBytes(doc.sizeBytes) : ""} {doc.mimeType ? `• ${doc.mimeType}` : ""}
+                        {doc.sizeBytes ? formatBytes(doc.sizeBytes) : ""}{" "}
+                        {doc.mimeType ? `• ${doc.mimeType}` : ""}
                       </div>
                     </div>
 
@@ -257,9 +292,14 @@ export default function HomePage() {
 
                   <div className="mt-3 flex items-center justify-between">
                     <div className="text-xs text-white/40">
-                      {doc.createdAt ? new Date(doc.createdAt).toLocaleString() : ""}
+                      {doc.createdAt
+                        ? new Date(doc.createdAt).toLocaleString()
+                        : ""}
                     </div>
-                    <Link href={`/documents/${doc.id}`} className="text-xs font-semibold text-white/80 hover:text-white">
+                    <Link
+                      href={`/documents/${doc.id}`}
+                      className="text-xs font-semibold text-white/80 hover:text-white"
+                    >
                       Ver detalhe →
                     </Link>
                   </div>

@@ -13,6 +13,9 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import { StreamableFile } from '@nestjs/common';
+import { createReadStream } from 'node:fs';
+import * as path from 'node:path';
 
 import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
 import { ListDocumentsUseCase } from '../../application/use-cases/list-documents.usecase';
@@ -37,6 +40,17 @@ export class DocumentsController {
   get(@Req() req: any, @Param('id') id: string) {
     return this.getDoc.execute(req.user.sub, id);
   }
+  @Get(':id/file')
+  async file(@Req() req: any, @Param('id') id: string) {
+    const doc = await this.getDoc.execute(req.user.sub, id);
+
+    const absolute = path.join(process.cwd(), doc.storagePath);
+    const stream = createReadStream(absolute);
+
+    // StreamableFile deixa o Nest setar response apropriada;
+    // se quiser Content-Disposition, a gente adiciona depois.
+    return new StreamableFile(stream, { type: doc.mimeType });
+  }
 
   @Post()
   @UseInterceptors(
@@ -51,7 +65,9 @@ export class DocumentsController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
-          new FileTypeValidator({ fileType: /(image\/png|image\/jpeg)/ }),
+          new FileTypeValidator({
+            fileType: /(image\/(png|jpeg|webp)|application\/pdf)/,
+          }),
         ],
       }),
     )

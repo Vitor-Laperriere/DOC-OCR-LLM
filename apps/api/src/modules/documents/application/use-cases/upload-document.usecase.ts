@@ -5,10 +5,14 @@ import * as path from 'node:path';
 
 import { DOCUMENT_REPOSITORY } from '../../domain/repositories/document-repository.token';
 import type { DocumentEntity, DocumentRepository } from '../../domain/repositories/document-repository';
+import { OCR_PORT } from '../../domain/ports/ocr.port';
+import type { OcrPort } from '../../domain/ports/ocr.port';
 
 function extFromMime(mime: string): string {
   if (mime === 'image/png') return '.png';
   if (mime === 'image/jpeg') return '.jpg';
+  if (mime === 'image/webp') return '.webp';
+  if (mime === 'application/pdf') return '.pdf';
   return '';
 }
 
@@ -16,12 +20,13 @@ function extFromMime(mime: string): string {
 export class UploadDocumentUseCase {
   constructor(
     @Inject(DOCUMENT_REPOSITORY) private readonly repo: DocumentRepository,
+    @Inject(OCR_PORT) private readonly ocr: OcrPort,
   ) {}
 
   async execute(input: { ownerId: string; file: Express.Multer.File }): Promise<DocumentEntity> {
     const { ownerId, file } = input;
 
-    // 1) Cria doc com storagePath temporário (schema exige não-null)
+    // 1) Cria doc inicial (precisamos do id para nomear arquivo)
     const created = await this.repo.create({
       ownerId,
       status: DocumentStatus.UPLOADED,
@@ -31,7 +36,7 @@ export class UploadDocumentUseCase {
       storagePath: 'PENDING',
     });
 
-    // 2) Salva arquivo com nome baseado no documentId
+    // 2) Salva arquivo em disco com nome baseado no id
     const storageDir = path.join(process.cwd(), 'storage');
     await fs.mkdir(storageDir, { recursive: true });
 
@@ -41,10 +46,22 @@ export class UploadDocumentUseCase {
     const absolutePath = path.join(process.cwd(), relativePath);
 
     await fs.writeFile(absolutePath, file.buffer);
+    await this.repo.updateStoragePath(created.id, relativePath);
 
-    // 3) Atualiza storagePath no banco
-    const updated = await this.repo.updateStoragePath(created.id, relativePath);
+    // 3) OCR síncrono
+    await this.repo.updateStatus(created.id, DocumentStatus.OCR_PROCESSING);
 
-    return updated;
+    try {
+      const text = await this.ocr.extractText({ mimeType: file.mimetype, absolutePath });
+      await this.repo.upsertOcrResult(created.id, text);
+      await this.repo.updateStatus(created.id, DocumentStatus.OCR_DONE);
+    } catch (e) {
+      await this.repo.updateStatus(created.id, DocumentStatus.FAILED);
+    }
+
+    // Retorna o documento final (sem OCR text; o detalhe entrega)
+    const finalDoc = await this.repo.findByIdForOwner(created.id, ownerId);
+    // findByIdForOwner retorna DocumentDetails; aqui devolvemos o básico:
+    return finalDoc as any;
   }
 }
