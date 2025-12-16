@@ -10,6 +10,8 @@ import { OCR_PORT } from './domain/ports/ocr.port';
 import { OcrService } from './infra/ocr/ocr.service';
 import { LlmModule } from '../llm/llm.module';
 import { AskDocumentUseCase } from './application/use-cases/ask-document.usecase';
+import { ListChatUseCase } from './application/use-cases/list-chat.usecase'; 
+
 
 
 @Module({
@@ -19,10 +21,12 @@ import { AskDocumentUseCase } from './application/use-cases/ask-document.usecase
     PrismaDocumentRepository,
     { provide: DOCUMENT_REPOSITORY, useExisting: PrismaDocumentRepository },
     ListDocumentsUseCase,
+    ListDocumentsUseCase,
     GetDocumentUseCase,
     UploadDocumentUseCase,
     AskDocumentUseCase,
     OcrService,
+    ListChatUseCase,
     { provide: OCR_PORT, useExisting: OcrService },
   ],
   exports: [OCR_PORT],

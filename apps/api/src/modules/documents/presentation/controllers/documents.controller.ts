@@ -24,6 +24,7 @@ import { GetDocumentUseCase } from '../../application/use-cases/get-document.use
 import { UploadDocumentUseCase } from '../../application/use-cases/upload-document.usecase';
 import { AskDocumentDto } from '../dtos/ask-document.dto';
 import { AskDocumentUseCase } from '../../application/use-cases/ask-document.usecase';
+import { ListChatUseCase } from '../../application/use-cases/list-chat.usecase';
 
 @Controller('documents')
 @UseGuards(JwtAuthGuard)
@@ -33,6 +34,7 @@ export class DocumentsController {
     private readonly getDoc: GetDocumentUseCase,
     private readonly uploadDoc: UploadDocumentUseCase,
     private readonly askDoc: AskDocumentUseCase,
+    private readonly listChat: ListChatUseCase,
   ) {}
 
   @Post(':id/chat')
@@ -46,6 +48,11 @@ export class DocumentsController {
       documentId: id,
       question: dto.question,
     });
+  }
+
+  @Get(':id/chat')
+  async getChat(@Req() req: any, @Param('id') id: string) {
+    return this.listChat.execute({ ownerId: req.user.sub, documentId: id });
   }
 
   @Get()
