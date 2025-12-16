@@ -1,6 +1,6 @@
 # Demo
 
-![Demo](docs/paggo.gif)
+![Demo](paggo.gif)
 
 # Paggo OCR — Local Setup (1 comando)
 
