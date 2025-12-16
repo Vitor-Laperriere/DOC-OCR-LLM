@@ -10,9 +10,9 @@ import { OCR_PORT } from './domain/ports/ocr.port';
 import { OcrService } from './infra/ocr/ocr.service';
 import { LlmModule } from '../llm/llm.module';
 import { AskDocumentUseCase } from './application/use-cases/ask-document.usecase';
-import { ListChatUseCase } from './application/use-cases/list-chat.usecase'; 
-
-
+import { ListChatUseCase } from './application/use-cases/list-chat.usecase';
+import { DownloadDocumentUseCase } from './application/use-cases/download-document.usecase';
+import { PdfAppendixService } from './infra/pdf/pdf-appendix.service';
 
 @Module({
   imports: [PrismaModule, LlmModule],
@@ -24,6 +24,8 @@ import { ListChatUseCase } from './application/use-cases/list-chat.usecase';
     ListDocumentsUseCase,
     GetDocumentUseCase,
     UploadDocumentUseCase,
+    DownloadDocumentUseCase,
+    PdfAppendixService,
     AskDocumentUseCase,
     OcrService,
     ListChatUseCase,

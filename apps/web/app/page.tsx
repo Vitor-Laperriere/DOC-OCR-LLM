@@ -50,6 +50,7 @@ export default function HomePage() {
   useEffect(() => {
     if (!getToken()) router.replace("/login");
   }, [router]);
+  
 
   async function loadDocuments() {
     setDocsLoading(true);
@@ -164,16 +165,11 @@ export default function HomePage() {
       <div className="mx-auto w-full max-w-6xl px-6 py-10">
         <section className="mb-8 grid gap-6 md:grid-cols-2">
           <div className="space-y-4 min-w-0">
-            <div className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">
-              Etapa 5 • Upload com Progresso
-            </div>
+
             <h1 className="text-4xl font-semibold leading-tight tracking-tight break-words">
-              Envie uma fatura e acompanhe o upload em tempo real
+              Envie uma imagem ou PDF e acompanhe o upload em tempo real
             </h1>
-            <p className="text-base text-white/70 break-words">
-              Upload (multipart) + feedback visual e lista de documentos do
-              usuário autenticado.
-            </p>
+
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur overflow-hidden">

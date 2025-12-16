@@ -55,10 +55,40 @@ export default function DocumentPage() {
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
   const shouldPoll = useMemo(
     () => doc?.status === "OCR_PROCESSING",
     [doc?.status]
   );
+
+  useEffect(() => {
+    let url: string | null = null;
+
+    async function loadPreview() {
+      if (!doc) return;
+      setPreviewLoading(true);
+      try {
+        const res = await api.get(`/documents/${doc.id}/file`, {
+          responseType: "blob",
+        });
+        const blob = new Blob([res.data], { type: doc.mimeType });
+        url = URL.createObjectURL(blob);
+        setPreviewUrl(url);
+      } catch {
+        setPreviewUrl(null);
+      } finally {
+        setPreviewLoading(false);
+      }
+    }
+
+    loadPreview();
+
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [doc?.id]); // eslint-disable-line
 
   useEffect(() => {
     if (!getToken()) router.replace("/login");
@@ -105,6 +135,39 @@ export default function DocumentPage() {
       );
     } finally {
       setChatLoading(false);
+    }
+  }
+
+  async function downloadWithAppendix() {
+    if (!doc) return;
+    setDownloading(true);
+    setError(null);
+    try {
+      const res = await api.get(`/documents/${doc.id}/download`, {
+        responseType: "blob",
+      });
+      const blob = new Blob([res.data], { type: "application/pdf" });
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download =
+        (doc.originalName || `document_${doc.id}`).replace(
+          /\.(png|jpe?g|pdf|webp)$/i,
+          ""
+        ) + "_with_ocr_chat.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Falha ao baixar PDF com apêndice."
+      );
+    } finally {
+      setDownloading(false);
     }
   }
 
@@ -269,6 +332,14 @@ export default function DocumentPage() {
                   {downloading ? "Baixando..." : "Baixar original"}
                 </button>
 
+                <button
+                  onClick={downloadWithAppendix}
+                  disabled={downloading}
+                  className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 hover:bg-white/10 disabled:opacity-50"
+                >
+                  Baixar com OCR + Chat
+                </button>
+
                 {doc.status === "OCR_PROCESSING" && (
                   <div className="rounded-xl border border-white/10 bg-neutral-950/30 px-4 py-2 text-sm text-white/70">
                     Processando OCR… (polling automático)
@@ -296,6 +367,39 @@ export default function DocumentPage() {
                   <pre className="mt-4 max-h-[520px] overflow-auto whitespace-pre-wrap break-words rounded-xl border border-white/10 bg-neutral-950/30 p-4 text-sm text-white/80">
                     {doc.ocrText?.trim() ? doc.ocrText : "(OCR retornou vazio)"}
                   </pre>
+                )}
+              </div>
+
+              <div className="mt-8">
+                <h2 className="text-lg font-semibold">
+                  Visualização do documento
+                </h2>
+                <p className="mt-1 text-sm text-white/60">
+                  Renderizado a partir do arquivo salvo no servidor.
+                </p>
+
+                {previewLoading ? (
+                  <div className="mt-4 h-64 animate-pulse rounded-xl border border-white/10 bg-neutral-950/30" />
+                ) : !previewUrl ? (
+                  <div className="mt-4 rounded-xl border border-white/10 bg-neutral-950/30 px-4 py-6 text-sm text-white/60">
+                    Não foi possível carregar prévia.
+                  </div>
+                ) : doc.mimeType === "application/pdf" ? (
+                  <iframe
+                    className="mt-4 h-[520px] w-full rounded-xl border border-white/10 bg-neutral-950/30"
+                    src={previewUrl}
+                    title="PDF Preview"
+                  />
+                ) : doc.mimeType.startsWith("image/") ? (
+                  <img
+                    className="mt-4 max-h-[520px] w-full rounded-xl border border-white/10 bg-neutral-950/30 object-contain"
+                    src={previewUrl}
+                    alt={doc.originalName}
+                  />
+                ) : (
+                  <div className="mt-4 rounded-xl border border-white/10 bg-neutral-950/30 px-4 py-6 text-sm text-white/60">
+                    Tipo não suportado para visualização inline: {doc.mimeType}
+                  </div>
                 )}
               </div>
             </section>
@@ -344,7 +448,7 @@ export default function DocumentPage() {
                           className={
                             m.role === "USER"
                               ? "max-w-[90%] rounded-2xl bg-white px-4 py-2 text-sm text-neutral-950"
-                            : "max-w-[90%] rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/90"
+                              : "max-w-[90%] rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/90"
                           }
                         >
                           <div className="whitespace-pre-wrap break-words">

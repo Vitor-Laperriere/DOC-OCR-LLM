@@ -5,6 +5,7 @@ import {
   Param,
   Post,
   Req,
+  Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -25,6 +26,8 @@ import { UploadDocumentUseCase } from '../../application/use-cases/upload-docume
 import { AskDocumentDto } from '../dtos/ask-document.dto';
 import { AskDocumentUseCase } from '../../application/use-cases/ask-document.usecase';
 import { ListChatUseCase } from '../../application/use-cases/list-chat.usecase';
+import type { Response } from 'express';
+import { DownloadDocumentUseCase } from '../../application/use-cases/download-document.usecase';
 
 @Controller('documents')
 @UseGuards(JwtAuthGuard)
@@ -35,8 +38,24 @@ export class DocumentsController {
     private readonly uploadDoc: UploadDocumentUseCase,
     private readonly askDoc: AskDocumentUseCase,
     private readonly listChat: ListChatUseCase,
+    private readonly downloadDoc: DownloadDocumentUseCase,
   ) {}
 
+  @Get(':id/download')
+  async download(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Res() res: Response,
+  ) {
+    const { filename, pdfBuffer } = await this.downloadDoc.execute({
+      ownerId: req.user.sub,
+      documentId: id,
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(pdfBuffer);
+  }
   @Post(':id/chat')
   async chat(
     @Req() req: any,
