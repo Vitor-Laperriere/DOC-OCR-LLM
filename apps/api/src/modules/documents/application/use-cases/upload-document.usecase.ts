@@ -61,7 +61,9 @@ export class UploadDocumentUseCase {
     });
 
     // 2) Salva arquivo em disco com nome baseado no id
-    const storageDir = path.join(process.cwd(), 'storage');
+    const baseStorage =
+      process.env.STORAGE_DIR ?? path.join(process.cwd(), 'storage');
+    const storageDir = baseStorage;
     await fs.mkdir(storageDir, { recursive: true });
 
     const ext =
