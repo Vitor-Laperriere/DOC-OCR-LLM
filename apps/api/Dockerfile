@@ -39,4 +39,4 @@ COPY --from=build /app/prisma.config.ts ./prisma.config.ts
 
 RUN mkdir -p /app/storage
 
-CMD ["sh","-c","npm exec prisma migrate deploy && node dist/main.js"]
+CMD ["sh","-c","npm exec prisma migrate deploy && node dist/src/main.js"]
