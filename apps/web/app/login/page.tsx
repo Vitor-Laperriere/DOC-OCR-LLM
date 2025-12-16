@@ -46,13 +46,13 @@ export default function LoginPage() {
         <div className="grid w-full gap-10 md:grid-cols-2">
           <section className="space-y-4 min-w-0">
             <div className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">
-              Paggo OCR • Prototype
+              Vitor Laperriere
             </div>
             <h1 className="text-4xl font-semibold leading-tight tracking-tight break-words">
-              Faça login para enviar documentos e extrair texto via OCR
+              Faça login ou crie uma conta
             </h1>
             <p className="text-base text-white/70 break-words">
-              MVP com JWT. Próximas etapas: OCR, chat LLM, download PDF com apêndice.
+              Adicione imagens ou PDFs, extraia texto com OCR e faça perguntas usando LLMs.
             </p>
           </section>
 

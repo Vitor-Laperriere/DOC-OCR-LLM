@@ -1,0 +1,88 @@
+# =========================
+# OS / System
+# =========================
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+
+# =========================
+# Node / Package managers
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# =========================
+# Env files (secrets)
+# =========================
+.env
+.env.*
+!.env.example
+!.env.local.example
+
+# =========================
+# Build outputs
+# =========================
+dist/
+build/
+out/
+coverage/
+*.tsbuildinfo
+
+# =========================
+# Next.js
+# =========================
+.next/
+.vercel/
+.next-cache/
+
+# =========================
+# NestJS
+# =========================
+# (Nest normalmente compila em dist/, já está acima)
+
+# =========================
+# Prisma
+# =========================
+# prisma/migrations deve ser versionado (NÃO ignore)
+# ignore apenas artefatos locais/temporários
+prisma/*.db
+prisma/*.db-journal
+
+# =========================
+# Storage / uploads locais
+# =========================
+apps/api/storage/
+apps/api/storage/**
+apps/api/tmp/
+apps/api/tmp/**
+
+# =========================
+# Docker / local volumes
+# =========================
+*.pid
+docker-data/
+data/
+
+# =========================
+# IDEs / Editors
+# =========================
+.vscode/
+.idea/
+*.iml
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+
+# =========================
+# Misc
+# =========================
+*.tgz
