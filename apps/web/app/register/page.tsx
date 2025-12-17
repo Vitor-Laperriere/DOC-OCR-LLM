@@ -1,12 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { api } from "@/lib/api";
 import { getToken, setToken } from "@/lib/auth";
+import { PaggoBadge } from "@/components/paggo-badge";
 
 type RegisterResponse = {
   id: string;
@@ -78,17 +78,7 @@ export default function RegisterPage() {
       <div className="mx-auto flex min-h-screen w-full max-w-5xl items-center px-6 py-12">
         <div className="grid w-full gap-10 md:grid-cols-2">
           <section className="space-y-4 min-w-0">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">
-              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/10 p-0.5">
-                <Image
-                  src="/credit-card.svg"
-                  alt="Paggo logo"
-                  width={14}
-                  height={14}
-                />
-              </span>
-              Vitor Laperriere
-            </div>
+            <PaggoBadge label="Vitor Laperriere" />
             <h1 className="text-4xl font-semibold leading-tight tracking-tight break-words">
               Crie sua conta com email e senha
             </h1>
