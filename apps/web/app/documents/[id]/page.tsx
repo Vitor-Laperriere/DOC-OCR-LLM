@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -209,11 +210,23 @@ export default function DocumentPage() {
       // opcional: sincroniza com DB (garante ids reais/ordem)
       await fetchChat();
     } catch (err: any) {
-      setChatError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Falha ao enviar pergunta."
-      );
+      const status = err?.response?.status;
+
+      if (status === 503) {
+        setChatError(
+          "O chat está temporariamente indisponível. Aguarde alguns instantes e tente novamente."
+        );
+        setQuestion(q);
+        setMessages((prev) =>
+          prev.filter((message) => message.id !== optimisticUser.id)
+        );
+      } else {
+        setChatError(
+          err?.response?.data?.message ||
+            err?.message ||
+            "Falha ao enviar pergunta."
+        );
+      }
     } finally {
       setSending(false);
     }
@@ -276,7 +289,16 @@ export default function DocumentPage() {
       <header className="border-b border-white/10 bg-neutral-950/50 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="h-9 w-9 rounded-xl bg-white/10" />
+            <div className="h-9 w-9 rounded-xl bg-white/10 p-1">
+              <Image
+                src="/credit-card.svg"
+                alt="Paggo logo"
+                width={32}
+                height={32}
+                className="h-full w-full"
+                priority
+              />
+            </div>
             <div className="min-w-0">
               <div className="text-sm font-semibold">Paggo OCR</div>
               <div className="text-xs text-white/50 break-words">
@@ -468,6 +490,17 @@ export default function DocumentPage() {
                 <input
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
+                  onKeyDown={(event) => {
+                    if (
+                      event.key === "Enter" &&
+                      !event.shiftKey &&
+                      doc.status === "OCR_DONE" &&
+                      !sending
+                    ) {
+                      event.preventDefault();
+                      sendQuestion();
+                    }
+                  }}
                   placeholder={
                     doc.status === "OCR_DONE"
                       ? "Ex.: Qual é o valor total? Qual o CNPJ?"

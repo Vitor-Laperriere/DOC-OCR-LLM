@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -136,7 +137,16 @@ export default function HomePage() {
       <header className="border-b border-white/10 bg-neutral-950/50 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="h-9 w-9 rounded-xl bg-white/10" />
+            <div className="h-9 w-9 rounded-xl bg-white/10 p-1">
+              <Image
+                src="/credit-card.svg"
+                alt="Paggo logo"
+                width={32}
+                height={32}
+                className="h-full w-full"
+                priority
+              />
+            </div>
             <div className="min-w-0">
               <div className="text-sm font-semibold">Paggo OCR</div>
               <div className="text-xs text-white/50 break-words">
